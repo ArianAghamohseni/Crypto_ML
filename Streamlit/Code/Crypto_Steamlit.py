@@ -6,7 +6,6 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import yfinance as yf
-import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import precision_score, accuracy_score, f1_score, recall_score, roc_auc_score, confusion_matrix
 import seaborn as ns
@@ -17,11 +16,14 @@ from sklearn.metrics import silhouette_score,silhouette_samples
 import seaborn as sns
 from PIL import Image
 from sklearn.cluster import DBSCAN
+import time
+from sklearn.preprocessing import OneHotEncoder
+import mwclient
 
 
 
 
-cf = pd.read_csv(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\cf.csv")
+cf = pd.read_csv(r"cf.csv")
 
 st.title("Cryptocurrency Analysis")
 
@@ -31,13 +33,13 @@ report_choice = st.sidebar.selectbox("Select a Report", ["Report 1", "Report 2",
 if report_choice == "Report 1":
     st.header("Report 1")
 
-    data = pd.read_csv(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_1\Data\Q1_data.csv")
+    data = pd.read_csv(r"Q1_data.csv")
     st.subheader("First lets take a look at the data :")
     data
 
     # code :
 
-    data = pd.read_csv(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_1\Data\Q1_data.csv")
+    data = pd.read_csv(r"Q1_data.csv")
     
     from sklearn.preprocessing import StandardScaler
     X=data.copy()
@@ -114,15 +116,24 @@ if report_choice == "Report 1":
 
             # code :
 
+            # Define cluster colors
+
             inertias = []
             sil_score=[]
+
+            ######################################################################################3
+
+            features = data[['market_cap','volume']]
+            # perform k-means clustering
             model_kmeans = KMeans(n_clusters=1, random_state=42)
             features['cluster'] = model_kmeans.fit_predict(features)
+            #the cluster ids will be 0, 1, 2, 3, 4 for 5 clusters
 
             cluster_centroids = model_kmeans.cluster_centers_
             st.write('the cluster centroids will be in \n', cluster_centroids)
             cluster_colors = {0: 'red'}
             colorw=['lime']
+            # Create a scatter plot with cluster centroids
             plt.figure(figsize=(17,12))
             for cluster_id, color in cluster_colors.items():
                 cluster_data = features[features['cluster'] == cluster_id]
@@ -131,10 +142,13 @@ if report_choice == "Report 1":
                 plt.scatter(cluster_data['market_cap'], cluster_data['volume'], label=f'Cluster {cluster_id+1}', c=color,s=75,alpha=0.5)
                 plt.scatter(cluster_centroids[cluster_id, 0], cluster_centroids[cluster_id, 1], marker='*',s=120, c=colorw[cluster_id], label=f'Centroid {cluster_id+1}={cluster_centroids[cluster_id]}',alpha=1)
 
+            # Customize the plot
             plt.title('Coin Market Cap vs. Volume with K-Means Clustering')
             plt.xlabel('Market Cap')
             plt.ylabel('Volume')
             plt.legend()
+
+            # Show the plot
             plt.grid(True)
             st.pyplot(plt)
 
@@ -142,8 +156,11 @@ if report_choice == "Report 1":
             colorw=['k','y','r','cyan','m','hotpink','sienna','tan','b','g']
 
             for K in range(1,10):
+                # perform k-means clustering
+                features = data[['market_cap','volume']]
                 model_kmeans = KMeans(n_clusters=K+1, random_state=42)
                 features['cluster'] = model_kmeans.fit_predict(features)
+                #the cluster ids will be 0, 1, 2, 3, ... , K for K clusters
 
                 cluster_centroids = model_kmeans.cluster_centers_
                 st.write(f'the cluster centroids  for k = {K+1} will be in \n', cluster_centroids)
@@ -154,6 +171,7 @@ if report_choice == "Report 1":
 
 
 
+                # Create a scatter plot with cluster centroids
                 plt.figure(figsize=(17, 12))
                 for cluster_id, color in cluster_colors.items():
                     if cluster_id > K:
@@ -162,10 +180,13 @@ if report_choice == "Report 1":
                     plt.scatter(cluster_data['market_cap'], cluster_data['volume'], label=f'Cluster {cluster_id+1}', c=color,alpha=0.65,s=75)
                     plt.scatter(cluster_centroids[cluster_id, 0], cluster_centroids[cluster_id, 1], marker='*', c=colorw[cluster_id], s=200, label=f'Centroid {cluster_id+1}={cluster_centroids[cluster_id]}')
 
+                # Customize the plot
                 plt.title('Coin Market Cap vs. Volume with K-Means Clustering')
                 plt.xlabel('Market Cap')
                 plt.ylabel('Volume')
                 plt.legend()
+
+                # Show the plot
                 plt.grid(True)
                 st.pyplot(plt)
             plt.figure(figsize=(17, 12))
@@ -173,10 +194,13 @@ if report_choice == "Report 1":
             plt.xlabel('value of k')
             plt.ylabel('inertia')
             plt.title('elbow method using inertia')
+            st.subheader("Now the Elbow method using Inertia")
             st.pyplot(plt)
             sil_centers = pd.DataFrame({'Clusters' : range(2,11), 'Sil Score' : sil_score})
             st.write(sil_centers)
-            st.image(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_1\Code\sil.png", caption="Sil Score of Clusters", use_column_width=True)         
+            sns.lineplot(x = 'Clusters', y = 'Sil Score', data = sil_centers, marker="+")
+            st.subheader("Sil Score of Cluster's :")
+            st.image("sil.png", caption="Sil Score of Clusters", use_column_width=True)         
 
             # end code
 
@@ -209,7 +233,7 @@ if report_choice == "Report 1":
         st.subheader("The sorted neighbor plot :")
         st.pyplot(plt)
         st.subheader("The Knee point plot :")
-        st.image(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_1\Code\Knee.png", caption = "Knee point plot", use_column_width=True)
+        st.image("Knee.png", caption = "Knee point plot", use_column_width=True)
 
         # code :
 
@@ -261,14 +285,19 @@ if report_choice == "Report 1":
 
         st.subheader("The sorted neighbor plot :")
         st.pyplot(plt)
+        time.sleep(5)
+        
         st.subheader("The Knee point plot :")
-        st.image(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_1\Code\Knee_4.png", caption = "Knee point plot", use_column_width=True)
+        st.image(r"Knee_4.png", caption = "Knee3 point plot", use_column_width=True)
+        
+        #st.markdown('<img src="Kneee.png">', unsafe_allow_html=True)
 
         # code :
 
         from sklearn.cluster import DBSCAN
         dbscan=DBSCAN(eps=14100000000,min_samples=n_neighbor)#eps=0.2081727,min_samples=8
         dbscan.fit(data[['market_cap','volume']])
+        time.sleep(2)
         plt.figure(figsize=(12, 6))
         plt.scatter(data['market_cap'], data['volume'], c=dbscan.labels_)
         plt.grid(True)
@@ -315,8 +344,9 @@ if report_choice == "Report 1":
 
         st.subheader("The sorted neighbor plot :")
         st.pyplot(plt)
-        st.subheader("The Knee point plot :")
-        st.image(r"D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_1\Code\Knee_last.png", caption = "Knee point plot", use_column_width=True)
+
+        #st.subheader("The Knee point plot :")
+        st.image(r"Knee_last.png", caption = "Knee2 point plot", use_column_width=True)
 
         # code :
 
@@ -349,7 +379,7 @@ if report_choice == "Report 2":
 
 
     st.header("Report 2")
-    data = pd.read_excel(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_2\Data\coins_data.xlsx')
+    data = pd.read_excel(r'coins_data.xlsx')
 
     st.subheader("Which part are we going for ?")
     part_choise = st.selectbox("", ["Part 1", "Part 2", "Part 3", "Part 4"])
@@ -363,21 +393,26 @@ if report_choice == "Report 2":
 
         # Code :
     
-        coin_data = pd.read_excel(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_2\Data\coins_data.xlsx')
+        coin_data = pd.read_excel(r'coins_data.xlsx')
         features = coin_data[['MarketCap', 'Volume']]
+        coin_names = coin_data['Symbol']
 
         scaler = StandardScaler()
         features = scaler.fit_transform(features)
 
         from scipy.cluster.hierarchy import dendrogram, linkage
-        import matplotlib.pyplot as plt
+        from plotly.offline import iplot
+        import plotly.figure_factory as ff
 
-        Z = linkage(features, method='ward')
-        plt.figure(figsize=(12, 8))
-        dendrogram(Z, orientation='top')
+
+        Z = sch.linkage(features, method='ward')
+        plt.figure(figsize=(10, 6))
+        dendrogram = sch.dendrogram(Z, labels=coin_names.tolist(), orientation='top')
+
         plt.title('Dendrogram')
-        plt.xlabel('Data Points')
+        plt.xlabel('Cryptocurrencies')
         plt.ylabel('Distance')
+        plt.xticks(rotation=90)
 
         # end code
 
@@ -442,14 +477,15 @@ if report_choice == "Report 2":
 
         # Code :
     
-        coin_data = pd.read_excel(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_2\Data\coins_data.xlsx')
+        coin_data = pd.read_excel(r'coins_data.xlsx')
+        coin_names = coin_data['Symbol']
 
         from sklearn.preprocessing import LabelEncoder
+        from sklearn.cluster import AgglomerativeClustering
 
-        label_encoder = LabelEncoder()
-        coin_data['ProofType_Label'] = label_encoder.fit_transform(coin_data['ProofType'])
+        coin_data = pd.get_dummies(coin_data, columns=['ProofType'], prefix='ProofType')
 
-        features = coin_data[['MarketCap', 'Volume', 'ProofType_Label']]
+        features = coin_data[['MarketCap', 'Volume'] + [col for col in coin_data.columns if col.startswith('ProofType_')]]
 
         scaler = StandardScaler()
         features = scaler.fit_transform(features)
@@ -459,14 +495,17 @@ if report_choice == "Report 2":
         coin_data['Cluster'] = hc.fit_predict(features)
 
         from scipy.cluster.hierarchy import dendrogram, linkage
-        import matplotlib.pyplot as plt
+        from plotly.offline import iplot
+        import plotly.figure_factory as ff
 
-        Z = linkage(features, method='ward')
-        plt.figure(figsize=(12, 8))
-        dendrogram(Z, orientation='top')
+        Z = sch.linkage(features, method='ward')
+        plt.figure(figsize=(10, 6))
+        dendrogram = sch.dendrogram(Z, labels=coin_names.tolist(), orientation='top')
+
         plt.title('Dendrogram')
-        plt.xlabel('Data Points')
+        plt.xlabel('Cryptocurrencies')
         plt.ylabel('Distance')
+        plt.xticks(rotation=90)
 
         # end code
 
@@ -501,27 +540,35 @@ if report_choice == "Report 2":
 
 
         st.subheader("So what does a coin being in the first cluster mean ?")
-        st.write("""This cluster primarily consists of cryptocurrencies that utilize Proof of Stake (PoS) and some stablecoin-based cryptocurrencies.
-                    Notably, these cryptocurrencies operate on various blockchain networks, such as Ethereum, Tron, Solana, and others.
-                    The "MarketCap" and "Volume" vary significantly within this cluster, indicating diversity in terms of market capitalization and trading volume.""")
+        st.write("""Cryptocurrencies: ['WBTC', 'DAI', 'LTC', 'DOT', 'SOL', 'DOGE', 'BUSD', 'XRP', 'USDC', 'USDT', 'BTC']
+
+Interpretation: This cluster seems to consist of cryptocurrencies with relatively lower market capitalization and volume. 
+
+Most of these cryptocurrencies are not among the top 10 by market cap. 
+
+They include stablecoins like 'USDT' and 'USDC,' which are known for their price stability and are often used as trading pairs.""")
         
         st.subheader("What about cluster 2 ?")
-        st.write("""Cluster 2 is primarily represented by cryptocurrencies that use Proof of Work (PoW) as their consensus mechanism, including Bitcoin (BTC) and USDT.
-                    This cluster is less diverse in terms of the "ProofType," with a dominance of PoW-based cryptocurrencies.
-                    The "MarketCap" and "Volume" values in this cluster also exhibit variation, with Bitcoin and USDT standing out as 2 cryptocurrencies with a high market capitalization.""")
-        
-        st.subheader("So why are they the same as before ?")
-        st.write("""While keeping the number of clusters constant at two, including the "ProofType" feature has resulted in more refined clusters. 
-                    Cluster 1 consists of a mix of PoS-based and stablecoin-based cryptocurrencies, while Cluster 2 predominantly comprises PoW-based cryptocurrencies. 
-                    This analysis provides insights into how the "ProofType" feature can influence the clustering results and offers a way to distinguish cryptocurrencies based on their consensus mechanisms within a two-cluster framework.""")
+        st.write("""Cryptocurrencies: ['LEO', 'UNI', 'AVAX', 'SHIB', 'TRX', 'MATIC', 'ADA', 'BNB', 'ETH']
 
+Interpretation: Cluster 2 appears to contain cryptocurrencies with higher market capitalization and trading volume. 
+
+These are some of the top cryptocurrencies in terms of market cap and are associated with well-known platforms like Ethereum ('ETH'), Cardano ('ADA'), and Binance Coin ('BNB').""")
 
         st.header("So what conclusions can we draw from these results ?")
-        st.write("""Seeing as how the only thing different in both parts is the number of features (although for the second part choosing 3 clusters could potentially be beneficial), we can confidently say the choice of adding a feature can make the results more reliable.
-                    But as the clusters have remained exactly the same, we can conclude only changing the number of features and not the number of clusters could hurt the results.
-                    But if we were to change the number of clusters (as demonstrated below), we can take advantage of both of the changes.
-                    In conclusion, the second part of the project demonstrated that incorporating additional relevant features can lead to more informative and actionable clustering results, making it a preferred approach when analyzing the cryptocurrency market. 
-                    The choice of features is essential in the world of cryptocurrencies.""")
+        st.write("""Keeping the number of clusters constant at two, including the "ProofType" feature has resulted in more refined clusters. 
+
+Separating cryptocurrencies into two clusters based on their market capitalization, volume, and ProofType. 
+
+In the first part, the separation is primarily between a stablecoin ('USDT') and Bitcoin ('BTC').
+                 
+In summary, the second part provides a more detailed and clear view of the cryptocurrency market, considering 'ProofType' features in clustering. 
+
+It allows for a better understanding of the various cryptocurrencies and their groupings based on these features. 
+
+The first part is simpler and divides cryptocurrencies into two broad categories, primarily based on 'USDT' and 'BTC.' 
+
+The choice of which approach to use depends on the specific analysis and insights we aim to derive from the data.""")
 
 
 
@@ -532,14 +579,12 @@ if report_choice == "Report 2":
 
         # Code :
     
-        coin_data = pd.read_excel(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_2\Data\coins_data.xlsx')
+        coin_data = pd.read_excel(r'coins_data.xlsx')
+        coin_names = coin_data['Symbol']
 
-        from sklearn.preprocessing import LabelEncoder
+        coin_data = pd.get_dummies(coin_data, columns=['ProofType'], prefix='ProofType')
 
-        label_encoder = LabelEncoder()
-        coin_data['ProofType_Label'] = label_encoder.fit_transform(coin_data['ProofType'])
-
-        features = coin_data[['MarketCap', 'Volume', 'ProofType_Label']]
+        features = coin_data[['MarketCap', 'Volume'] + [col for col in coin_data.columns if col.startswith('ProofType_')]]
 
         scaler = StandardScaler()
         features = scaler.fit_transform(features)
@@ -548,25 +593,25 @@ if report_choice == "Report 2":
         hc = AgglomerativeClustering(n_clusters=n_clusters, affinity='euclidean', linkage='ward')
         coin_data['Cluster'] = hc.fit_predict(features)
 
-        from scipy.cluster.hierarchy import dendrogram, linkage
-        import matplotlib.pyplot as plt
 
-        Z = linkage(features, method='ward')
-        plt.figure(figsize=(12, 8))
-        dendrogram(Z, orientation='top')
+        from scipy.cluster.hierarchy import dendrogram, linkage
+        from plotly.offline import iplot
+        import plotly.figure_factory as ff
+
+        Z = sch.linkage(features, method='ward')
+        plt.figure(figsize=(10, 6))
+        dendrogram = sch.dendrogram(Z, labels=coin_names.tolist(), orientation='top')
+
         plt.title('Dendrogram')
-        plt.xlabel('Data Points')
+        plt.xlabel('Cryptocurrencies')
         plt.ylabel('Distance')
+        plt.xticks(rotation=90)
 
         # end code
 
         st.pyplot(plt)
 
         # code :
-
-        n_clusters = 3
-        hc = AgglomerativeClustering(n_clusters=n_clusters, affinity='euclidean', linkage='ward')
-        coin_data['Cluster'] = hc.fit_predict(features)
 
         cluster_0 = coin_data[coin_data['Cluster'] == 0]
         cluster_1 = coin_data[coin_data['Cluster'] == 1]
@@ -596,29 +641,38 @@ if report_choice == "Report 2":
 
 
         st.subheader("So what does a coin being in the first cluster mean ?")
-        st.write("""Both 'USDT' and 'BTC' have high market capitalizations.
-                    These two cryptocurrencies share the same Proof Type of 'stablecoin.
-                    This cluster primarily includes stablecoins, with 'USDT' and 'BTC' having significant market capitalizations. 
-                    Stablecoins are designed to maintain a stable value and are often used for trading and transferring value.""")
+        st.write("""Cryptocurrencies: ['WBTC', 'LTC', 'DOT', 'SOL', 'DOGE', 'XRP', 'BTC']
+
+Interpretation: Cluster 1 consists of cryptocurrencies that have relatively high market capitalization and volume. 
+
+These cryptocurrencies are significant players in the market and include well-known names like Bitcoin ('BTC') and Ripple ('XRP').""")
         
         st.subheader("What about cluster 2 ?")
-        st.write("""This cluster appears to include a diverse set of cryptocurrencies with varying market capitalizations and trading volumes.
-                    The 'ProofType_Label' values in this cluster differ from 'PoS' to 'PoW' and 'PoH,' suggesting a mix of Proof Types.
-                    Cluster 2 represents a diverse portfolio of cryptocurrencies, including well-established ones like 'ETH,' 'ADA,' and 'BNB,' along with a mix of others. 
-                    The cryptocurrencies in this cluster have various Proof Types, indicating diversity in how they secure their networks.""")
+        st.write("""Cryptocurrencies: ['LEO', 'UNI', 'AVAX', 'SHIB', 'TRX', 'MATIC', 'ADA', 'BNB', 'ETH']
+
+Interpretation: Cluster 2 includes cryptocurrencies with high market capitalization and trading volume. 
+
+These cryptocurrencies are among the top performers in the market, and they represent a wide range of use cases, including decentralized finance (DeFi), smart contract platforms, and meme coins.""")
         
         st.subheader("What about cluster 3 ?")
-        st.write("""These cryptocurrencies are associated with the 'stablecoin' Proof Type.
-                    'DAI' and 'BUSD' are stablecoins on the Ethereum network, while 'XRP' and 'USDC' are also stablecoins with different Proof Types.
-                    This cluster is composed of cryptocurrencies with the 'stablecoin' Proof Type. 
-                    'DAI' and 'BUSD' are stablecoins on the Ethereum network, while 'XRP' and 'USDC' are also stablecoins with different Proof Types.""")
+        st.write("""Cryptocurrencies: ['DAI', 'BUSD', 'USDC', 'USDT']
+
+Interpretation: Cluster 3 primarily consists of stablecoins. Stablecoins like 'USDT,' 'USDC,' 'DAI,' and 'BUSD' are designed to maintain a stable value and are widely used for trading and as a store of value in the cryptocurrency market.
+
+These cryptocurrencies are associated with the 'stablecoin' Proof Type.""")
 
 
 
-        st.subheader("So why are they the same as before ?")
-        st.write("""It's essential to consider the specific characteristics of the cryptocurrencies within each cluster when making investment or analysis decisions. 
-                    The choice of three clusters allows for a more meaningfull view of the cryptocurrency market, considering market capitalization, trading volume, and the type of network security (Proof Type). 
-                    As always, it's important to conduct further research and analysis to make informed decisions about cryptocurrency investments.""")
+        st.subheader("So ?")
+        st.write("""This three-cluster approach provides more granularity in categorizing cryptocurrencies. 
+
+It further separates the stablecoins into their own cluster (Cluster 3), highlighting their distinct characteristics compared to other cryptocurrencies.
+
+Clusters 1 and 2 still represent cryptocurrencies with high market capitalization and trading volume, but the division between them is more pronounced, possibly reflecting differences in the market dynamics or use cases among these cryptocurrencies.
+
+The choice of three clusters may be useful when we want to distinguish between stablecoins and other types of cryptocurrencies, providing a more detailed analysis of the market. 
+
+However, the specific interpretation of the clusters may vary based on the context and the goals of our analysis.""")
 
 
 
@@ -629,39 +683,39 @@ if report_choice == "Report 2":
 
         # Code :
     
-        coin_data = pd.read_excel(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_2\Data\coins_data.xlsx')
+        coin_data = pd.read_excel(r'coins_data.xlsx')
+        coin_names = coin_data['Symbol']
 
-        from sklearn.preprocessing import LabelEncoder
+        coin_data = pd.get_dummies(coin_data, columns=['ProofType'], prefix='ProofType')
 
-        label_encoder = LabelEncoder()
-        coin_data['ProofType_Label'] = label_encoder.fit_transform(coin_data['ProofType'])
-
-        from sklearn.preprocessing import LabelEncoder
-
-        label_encoder = LabelEncoder()
-        coin_data['Network_Label'] = label_encoder.fit_transform(coin_data['Network'])
-
-
-        features = coin_data[['MarketCap', 'Volume', 'ProofType_Label', 'Network_Label']]
+        features = coin_data[['MarketCap', 'Volume'] + [col for col in coin_data.columns if col.startswith('ProofType_')]]
 
         scaler = StandardScaler()
         features = scaler.fit_transform(features)
 
+        coin_data = pd.get_dummies(coin_data, columns=['Network'], prefix='Network')
+
+        features = coin_data[['MarketCap', 'Volume', 'ProofType_PoH','ProofType_PoS','ProofType_PoW','ProofType_RPCA','ProofType_stablecoin'] + [col for col in coin_data.columns if col.startswith('Network_')]]
+
+        scaler = StandardScaler()
+        features = scaler.fit_transform(features)
 
         from scipy.cluster.hierarchy import dendrogram, linkage
-        import matplotlib.pyplot as plt
+        from plotly.offline import iplot
+        import plotly.figure_factory as ff
 
-        Z = linkage(features, method='ward')
-        plt.figure(figsize=(12, 8))
-        dendrogram(Z, orientation='top')
+        Z = sch.linkage(features, method='ward')
+        plt.figure(figsize=(10, 6))
+        dendrogram = sch.dendrogram(Z, labels=coin_names.tolist(), orientation='top')
+
         plt.title('Dendrogram')
-        plt.xlabel('Data Points')
+        plt.xlabel('Cryptocurrencies')
         plt.ylabel('Distance')
+        plt.xticks(rotation=90)
 
         # end code
 
         st.pyplot(plt)
-        st.write("As we can see, the vertical distance and the number of colors used in the dendogram indicates that the desired number of clusters is 2")
 
         # code :
 
@@ -696,32 +750,35 @@ if report_choice == "Report 2":
 
 
         st.header("Conclusion :")
-        st.subheader("Cluster Composition:")
-        st.write("""Cluster 1 is more diverse in terms of the cryptocurrencies it includes, while Cluster 2 comprises two of the most significant cryptocurrencies in the market, 'USDT' and 'BTC.'
-""")
+        st.subheader("Cluster 1 :")
+        st.write("""Cryptocurrencies: ['LEO', 'UNI', 'WBTC', 'AVAX', 'DAI', 'SHIB', 'LTC', 'TRX', 'DOT', 'MATIC', 'SOL', 'DOGE', 'ADA', 'BUSD', 'XRP', 'USDC', 'BNB', 'USDT', 'ETH']
 
-        st.subheader("Diversity in Features:")
-        st.write("""The four features used in clustering (market capitalization, volume, ProofType_Label, Network_Label) capture various aspects of cryptocurrencies, including their technology (ProofType) and underlying blockchain networks (Network_Label).
-""")
+Interpretation: Cluster 1 appears to include a wide range of cryptocurrencies with various use cases, market capitalization, and trading volume. 
+
+This cluster is more diverse and contains cryptocurrencies representing decentralized finance (DeFi), meme coins, stablecoins, and major platforms such as Ethereum ('ETH') and Binance Coin ('BNB'). 
+
+It seems to encompass a broad spectrum of the cryptocurrency market.""")
+
+        st.subheader("Cluster 2 :")
+        st.write("""Cryptocurrencies: ['BTC']
+
+Interpretation: Cluster 2 includes only one cryptocurrency, which is Bitcoin ('BTC'). 
+
+Bitcoin is unique in this clustering, being separate from other cryptocurrencies. 
+
+This might indicate that Bitcoin stands out from the rest in terms of market capitalization, trading volume, and network.""")
         
 
-        st.subheader("Risk and Stability:")
-        st.write("""Cluster 2, with 'USDT' and 'BTC,' represents assets known for their stability and low volatility. These are often seen as safe havens in the crypto market.
-""")
+        st.subheader("So how did the additional feature do ?")
+        st.write("""The addition of the 'Network' feature further refines the clustering by taking into account the underlying blockchain networks of cryptocurrencies. 
 
-        st.subheader("Cluster 1 Diversity: ")
-        st.write("""Cryptocurrencies in Cluster 1 exhibit a wide range of characteristics. Investors seeking diversification or those interested in exploring different types of cryptocurrencies may find this cluster appealing.
-""")
-        
-        st.subheader("Investment Strategy: ")
-        st.write("""Your choice between Cluster 1 and Cluster 2 may depend on your investment strategy. Cluster 2 is generally considered less risky, while Cluster 1 offers more options for potential growth but with varying risk levels.
-""")
-        
-        st.subheader("Analysis Continuation: ")
-        st.write("""Beyond clustering, you should analyze the individual characteristics and performance of the cryptocurrencies within each cluster to make informed investment decisions.
-""")
+In this particular case, Cluster 1 contains a diverse mix of cryptocurrencies, while Cluster 2 highlights the exceptional position of Bitcoin. 
 
+This clustering provides insights into how Bitcoin differs from the rest of the cryptocurrency market due to its historical significance and distinct characteristics.
 
+But it would be a more refined analysis if the number of clusters could be more.
+
+As we can see from the dendogram, the model could benefit from additional clusters.""")
 
 
 
@@ -731,37 +788,11 @@ if report_choice == "Report 3":
 
     # code :
 
-    train = pd.read_csv(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\train.csv')
-    teste = pd.read_csv(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\teste.csv')
-    testf = pd.read_csv(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\testf.csv')
-
-    train.drop(columns = ['Date'], inplace = True)
-    teste.drop(columns = ['Date'], inplace = True)
-    testf.drop(columns = ['Date'], inplace = True)
-
-    Xtrain = train.drop(columns=['Target_XMR'])
-    ytrain = train['Target_XMR']
-    Xeval = teste.drop(columns=['Target_XMR'])
-    yeval = teste['Target_XMR']
-    Xtest = testf.drop(columns=['Target_XMR'])
-    ytest = testf['Target_XMR']
-
-    from sklearn.decomposition import PCA
-
-    pca = PCA(n_components=3)
-    Xtrain = pca.fit_transform(Xtrain)
-    Xtest = pca.transform(Xtest)
-    Xeval = pca.transform(Xeval)
-
-    from sklearn.preprocessing import StandardScaler
-
-    scaler = StandardScaler()
+    train = pd.read_csv(r'train.csv')
+    teste = pd.read_csv(r'teste.csv')
+    testf = pd.read_csv(r'testf.csv')
 
 
-    scaler = StandardScaler()
-    Xtrain = scaler.fit_transform(Xtrain)
-    Xtest = scaler.transform(Xtest)
-    Xeval = scaler.transform(Xeval)
 
     # end code
 
@@ -769,14 +800,16 @@ if report_choice == "Report 3":
     st.header("Report 3")
 
     st.subheader("Choose a Dataset to Display:")
-    dataset_choice = st.selectbox("Select a Dataset", ["Train", "Teste", "Testf"])
+    dataset_choice = st.selectbox("Select a Dataset", ["Train", "Teste", "Testf", "New df"])
 
     if dataset_choice == "Train":
-        data = pd.read_csv(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\train.csv')
+        data = pd.read_csv(r'train.csv')
     elif dataset_choice == "Teste":
-        data = pd.read_csv(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\teste.csv')
+        data = pd.read_csv(r'teste.csv')
     elif dataset_choice == "Testf":
-        data = pd.read_csv(r'D:\Sharif University of Tech\Data Sience Boot Camp\Project\Second Phaze\Part_3\Data\testf.csv')
+        data = pd.read_csv(r'testf.csv')
+    elif dataset_choice == "New df":
+        data = pd.read_csv(r"New df.csv")
 
     st.write(f"Displaying {dataset_choice} Dataset:")
     st.dataframe(data)
@@ -784,249 +817,349 @@ if report_choice == "Report 3":
     st.write("First we prep the data (check for imbalancement and decomposite the data and reduce dimensionallity and standardizing it)")
 
 
-    st.header("We created 3 models for this part compared them and chose the best one.")
+    st.header("We created 3 models for this part compared them and chose the best one. (and a little problem at the end)")
 
-    model_choice = st.selectbox("Which model would you like to see ?", ["Model 1", "Model 2", "Model 3"])
+    model_choice = st.selectbox("Which model would you like to see ?", ["Model 1", "Model 2", "Model 3", "Big Boss"])
 
 
     if model_choice == "Model 1":
 
-
         st.header("For the first model we used the KNN method :")
+        st.subheader("Here we have 3 stat's (Scatter Plot, Heat Map, Score) :")
 
-        # code 
+        st.write("Scatter Plot :")
+        st.image(r"SP_KNN_EV.png", caption = "Scatter Plot", use_column_width=True)
 
-        from sklearn.neighbors import KNeighborsClassifier
-        model1 = KNeighborsClassifier(n_neighbors=3)
+        st.write("Heat Map :")
+        st.image(r"HM_KNN_EV.png", caption = "Heat Map", use_column_width=True)
 
-        model1.fit(Xtrain, ytrain)
-        ypred = model1.predict(Xeval)
-        score = f1_score(yeval, ypred)
+        precision_score = 0.5769230769230769
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
 
-        fig , ax = plt.subplots(figsize = (8, 2))
+        recall_score = 0.5178571428571428
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
 
-        plt.scatter(range(1, Xeval.shape[0]+1), yeval, label = 'answer')
+        accuracy_score = 0.52
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
 
-        plt.scatter(range(1, Xeval.shape[0]+1), ypred, label = 'predictions', alpha=0.7)
+        roc_auc_score = 0.5178571428571428
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
 
-        plt.legend(loc = 'center')
+        f1_score = 0.5555555555555555
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
 
-        # end code
 
-        st.pyplot(plt)
-        F_1_Score = score
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
         st.write("The F1 score for this model is about 0.55, and so this method is not so appealing.")
 
 
     elif model_choice == "Model 2":
 
-
-
-        # code :
-
-        from sklearn.ensemble import RandomForestClassifier
-
-        model = RandomForestClassifier(n_estimators=2000, min_samples_split=20, random_state=1, bootstrap=True, oob_score=True, max_samples=1000)
-
-        model.fit(Xtrain, ytrain)
-        ypred = model.predict(Xeval)
-
-        score = f1_score(yeval, ypred)
-
-        fig , ax = plt.subplots(figsize = (8, 2))
-
-        plt.scatter(range(1, Xeval.shape[0]+1), yeval, label = 'answer')
-
-        plt.scatter(range(1, Xeval.shape[0]+1), ypred, label = 'predictions', alpha=0.7)
-
-        plt.legend(loc = 'center')
-
-        ypreds = model.predict(Xtest)
-
-        score_1 = f1_score(ytest, ypreds)
-
-        # end code
         
         st.header("For the Second model we used the Random Forest method :")
-        st.pyplot(plt)
-        F_1_Score = score
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
+        st.subheader("Lets see out stats :")
+
+        st.write("Scatter Plot :")
+        st.image(r"SP_RF_EV.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"HM_RF_EV.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.5897435897435898
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.8214285714285714
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.58
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.547077922077922
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.6865671641791046
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
         st.write("The F1 score for this method is about 0.68, and compared to the previous one and in general it is accaptable for now.")
 
 
-        st.write("So far we have used the eval data to find the F_1 score and to compare, but now that we have chosen the method we are gonna use, we might aswell use the actuall test data and see the F1 score for it.")
-
-        # code :
-
-        fig , ax = plt.subplots(figsize = (8, 2))
-
-        plt.scatter(range(1, Xtest.shape[0]+1), ytest, label = 'answer')
-
-        plt.scatter(range(1, Xtest.shape[0]+1), ypreds, label = 'predictions', alpha=0.7)
-
-        plt.legend(loc = 'center')
+        st.header("So far we have used the eval data to find the F_1 score and to compare, but now that we have chosen the method we are gonna use, we might aswell use the actuall test data and see the F1 score for it.")
+        st.subheader("Lets see out stats :")
 
 
-        # end code
+        st.write("Scatter Plot :")
+        st.image(r"SP_RF_TE.png", caption = "Scatter Plot", use_column_width=True)
 
-        st.pyplot(plt)
-        F_1_Score = score_1
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
+        st.write("Heat Map :")
+        st.image(r"HM_RF_TE.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.6071428571428571
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.9444444444444444
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.6
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.513888888888889
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.7391304347826088
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
         st.write("We can see that the F1 score has gone up compered to before, this could be because of the fact that our two sets are located in different trend intervals and therefore have different distribution of 0s and 1s.")
 
         st.header("For ADHD sake, we are going to implement a backtracking system :")
 
-        # code :
+        st.write("Scatter Plot :")
+        st.image(r"SP_RF_BT.png", caption = "Scatter Plot", use_column_width=True)
 
-        pf = cf.copy()
-        pf.drop(columns=['Date'], inplace = True)
+        st.write("Heat Map :")
+        st.image(r"HM_RF_BT.png", caption = "Heat Map", use_column_width=True)
 
-        def backtest(data, start = 2114, step = 1):
-            all_predictions = []
-            for i in range(start, data.shape[0], step):
-                train = data.iloc[0:i].copy()
-                test = data.iloc[i:(i+step)].copy()
-                pca = PCA(n_components=3)
-                Xtrain = train.drop(columns=['Target_XMR'])
-                Xtrain = pca.fit_transform(Xtrain)
-                ytrains = train['Target_XMR'] 
-                Xtest = test.drop(columns=['Target_XMR'])
-                Xtest = pca.transform(Xtest)
-                scaler = StandardScaler()
-                Xtrain = scaler.fit_transform(Xtrain)
-                Xtest = scaler.transform(Xtest)
-                models = RandomForestClassifier(n_estimators=2000, min_samples_split=20, random_state=1, bootstrap=True, oob_score=True, max_samples=1000)
-                models.fit(Xtrain, ytrains)
-                predictions = models.predict(Xtest)
-                all_predictions.append(predictions)
-            return all_predictions
+        precision_score = 0.5555555555555556
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
 
-        preds = backtest(pf)
-        y = np.array(preds).flatten()
-        yhat = ytest
-        score = f1_score(yhat, y)
+        recall_score = 0.8333333333333334
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.5
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.4166666666666667
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.6666666666666667
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
 
 
-        fig , ax = plt.subplots(figsize = (8, 2))
-
-        plt.scatter(range(1, Xtest.shape[0]+1), yhat, label = 'answer')
-
-        plt.scatter(range(1, Xtest.shape[0]+1), y, label = 'predictions', alpha=0.7)
-
-        plt.legend(loc = 'center')
-
-        # end code 
-
-        st.pyplot(plt) 
-        F_1_Score = score
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
         st.write("""So, if we use a 30 day interval as trend, we can find the next trend with about 74% accuracy on both 1s and 0s, but if we try to do this mid-trends and one by one like our backtesting model; we will see a little bit of setback because the model is not capabale of finding itself's location in the respective trend.
-                    Therefore our backtesting system's accuracy on both 1s and 0s would be about 67%.""")
+
+Therefore our backtesting system's accuracy on both 1s and 0s would be about 67%.""")
 
 
     elif model_choice == "Model 3":
-
-
-        # code :
-
-        Xtrain = train.drop(columns=['Target_XMR'])
-        ytrain = train['Target_XMR']
-
-        Xeval = teste.drop(columns=['Target_XMR'])
-        yeval = teste['Target_XMR']
-
-        Xtest = testf.drop(columns=['Target_XMR'])
-        ytest = testf['Target_XMR']
-
-        from sklearn.preprocessing import StandardScaler
-
-        scaler = StandardScaler()
-        Xtrain = scaler.fit_transform(Xtrain)
-        Xtest = scaler.transform(Xtest)
-        Xeval = scaler.transform(Xeval)
-
-        from sklearn.ensemble import AdaBoostClassifier
-        model3 = AdaBoostClassifier(n_estimators=350)
-
-        model3.fit(Xtrain, ytrain)
-        ypred = model3.predict(Xeval)
-
-        score = f1_score(yeval, ypred)
-
-        fig , ax = plt.subplots(figsize = (8, 2))
-
-        plt.scatter(range(1, Xeval.shape[0]+1), yeval, label = 'answer')
-
-        plt.scatter(range(1, Xeval.shape[0]+1), ypred, label = 'predictions', alpha=0.7)
-
-        plt.legend(loc = 'center')
-
-        # end code
         
         st.header("As we saw, the f1 score for the randoom forest is acceptable but we can use more complex models such as AdaBoostClassifier :")
-        st.pyplot(plt)
-        F_1_Score = score
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
+
+        st.subheader("Lets see out stats :")
+
+        st.write("Scatter Plot :")
+        st.image(r"SP_ADA_EV.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"HM_ADA_EV.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.625
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.7142857142857143
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.6
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.5844155844155845
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.6666666666666666
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
+
         st.write("Not very apealing, but we might as well use out test data aswell.")
 
-        # code :
+        st.subheader("Lets see out stats :")
 
-        ypreds = model3.predict(Xtest)
-        score = f1_score(ytest, ypreds)
+        st.write("Scatter Plot :")
+        st.image(r"SP_RF_TE.png", caption = "Scatter Plot", use_column_width=True)
 
-        # end score
+        st.write("Heat Map :")
+        st.image(r"HM_RF_TE.png", caption = "Heat Map", use_column_width=True)
 
-        st.pyplot(plt)
-        F_1_Score = score
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
+        precision_score = 0.5925925925925926
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
 
-        # code 
+        recall_score = 0.8888888888888888
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
 
-        pf = cf.copy()
-        pf.drop(columns=['Date'], inplace = True)
-        def backtest(data, start = 2114, step = 1):
-            all_predictions = []
-            for i in range(start, data.shape[0], step):
-                train = data.iloc[0:i].copy()
-                test = data.iloc[i:(i+step)].copy()
-                Xtrain = train.drop(columns=['Target_XMR'])
-                ytrains = train['Target_XMR'] 
-                Xtest = test.drop(columns=['Target_XMR'])
-                scaler = StandardScaler()
-                Xtrain = scaler.fit_transform(Xtrain)
-                Xtest = scaler.transform(Xtest)
-                models = AdaBoostClassifier(n_estimators=350)
-                models.fit(Xtrain, ytrains)
-                predictions = model3.predict(Xtest)
-                all_predictions.append(predictions)
-            return all_predictions
+        accuracy_score = 0.5666666666666667
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
 
-        preds = backtest(pf)
-        y = np.array(preds).flatten()
-        yhat = ytest
-        score = f1_score(yhat, y)
+        roc_auc_score = 0.4861111111111111
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
 
-        fig , ax = plt.subplots(figsize = (8, 2))
-
-        plt.scatter(range(1, Xtest.shape[0]+1), yhat, label = 'answer')
-
-        plt.scatter(range(1, Xtest.shape[0]+1), y, label = 'predictions', alpha=0.7)
-
-        plt.legend(loc = 'center')
-
-        # end code
+        f1_score = 0.711111111111111
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
 
 
         st.write("Let's see how the back testing works :")
-        st.pyplot(plt)
-        F_1_Score = score
-        st.write(f"F_1 Score: {F_1_Score}", key="number_box", format="0")
+    
+        st.subheader("Lets see out stats :")
+
+        st.write("Scatter Plot :")
+        st.image(r"SP_RF_BT.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"HM_RF_BT.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.5769230769230769
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.8333333333333334
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.5333333333333333
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.45833333333333337
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.6818181818181818
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+ 
         st.write("""As you can see, AdaBoost is more consistent with Backtesting which is a better measure for our F1 Score because of a better distribution of 1s and 0s.
                     Finally we can say our RandomForest is better in a full trend finding way with a F1-score of 74% and has a pretty good backtesting F1-score of 67% approximately.
                     Also our AdaBoost model is slightly better in backtesting with more than 68% in F1-score.""")
 
 
+    if model_choice == "Big Boss":
+        st.header("The final question :")
+        st.subheader("Here (as you can quess by the title) we have created a problem to be solved :")
+        st.subheader("""The new question is 'Is Bitcoin sensitive to worldwide news and people opinions?'.
+
+Now we will try to use sentiment analysis on Bitcoin's wikipedia page to answer that question:""")
+
+        st.write("Here we are going to use the New df data fram (you can view this data set at the top)")
+
+        st.subheader("Now we will use the Adaboost and the respective backtesting system that we have used before :")
+
+        st.subheader("Lets see out stats (for the eval data) :")
+
+        st.write("Scatter Plot :")
+        st.image(r"TW_ADA_SP_1.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"TW_ADA_HM_1.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.4117647058823529
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.6666666666666666
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.46
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.48850574712643674
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.509090909090909
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
 
 
 
+        st.subheader("Lets see out stats (for the test data this time) :")
+
+        st.write("Scatter Plot :")
+        st.image(r"TW_ADA_TE_SP.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"TW_ADA_TE_HM.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.42105263157894735
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.5333333333333333
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.4
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.4
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.47058823529411764
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
+        st.subheader("Lets see out stats (back testing (ADHD)) :")
+
+        st.write("Scatter Plot :")
+        st.image(r"TW_ADA_BT_SP.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"TW_ADA_BT_HM.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.42105263157894735
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.5333333333333333
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.4
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.4
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.47058823529411764
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
+        st.write("As you can see, bitcoin and the news source that we have selected has not much in common and therefore the result is weaker than even randomly distributing 1s and 0s!")
+
+        st.header("Let's see if using other complex models will help us reaching better results:")
+        st.subheader("Lets see out stats (for the ecal first) :")
+
+        st.write("Scatter Plot :")
+        st.image(r"TW_CLA_SP_1.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"TW_CLA_HM_1.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.4838709677419355
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.7142857142857143
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.56
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.58128078817734
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.5769230769230769
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
+        st.subheader("Lets see out stats (for the test next) :")
+
+        st.write("Scatter Plot :")
+        st.image(r"TW_CLA_SP_TE.png", caption = "Scatter Plot", use_column_width=True)
+
+        st.write("Heat Map :")
+        st.image(r"TW_CLA_HM_TE.png", caption = "Heat Map", use_column_width=True)
+
+        precision_score = 0.47058823529411764
+        st.write(f"Precision Score : {precision_score}", key="number_box", format="0")
+
+        recall_score = 0.5333333333333333
+        st.write(f"Recall Score : {recall_score}", key="number_box", format="0")
+
+        accuracy_score = 0.4666666666666667
+        st.write(f"Accuracy Score : {accuracy_score}", key="number_box", format="0")
+
+        roc_auc_score = 0.4666666666666667
+        st.write(f"Roc Auc Score : {roc_auc_score}", key="number_box", format="0")
+
+        f1_score = 0.5
+        st.write(f"F1 Score: {f1_score}", key="number_box", format="0")
+
+
+
+        st.subheader("Even trying NN didn't help us much, therefore we come to the result that our source (wikioedia revesions) doesen't have the proper correlation with bitcoin prices.")
